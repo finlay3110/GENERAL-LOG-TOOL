@@ -1,8 +1,8 @@
 # UCN General Log
 
-A general log for Bridge Command sorties: anyone on the crew can write to it, every
-entry is stamped with the time it was logged, and the whole thing exports as a PDF
-mission report or a JSON backup.
+A personal log for Bridge Command sorties: one keeper, one log. Every entry is
+stamped with the time it was logged, and the whole thing exports as a PDF mission
+report or a JSON backup.
 
 **Fan-made. Not affiliated with, endorsed by, or connected to Bridge Command or
 The London Space Elevator Ltd.** All trademarks belong to their owners.
@@ -24,8 +24,7 @@ of `.`, or drag the folder onto the Netlify dashboard.
 | Tab | Holds |
 |---|---|
 | **Setup** | Who is keeping the log, the ship, mission and authorisation, the date and time, and a collapsible briefing (threat level plus free-text notes). |
-| **Crew** | The roster. Anyone here can be picked as the author of an entry. |
-| **Log** | The compose card and the entry stream, newest first, with a filter. |
+| **Log** | The compose card and the entry stream, newest first, with a filter. Entries are yours by definition, so there is no author to pick — just the type, the text and a critical flag. |
 | **More** | PDF export, JSON export and import, session controls, and the About note. |
 
 ## Data

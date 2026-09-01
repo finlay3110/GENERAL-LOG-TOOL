@@ -492,33 +492,15 @@ src:url(data:font/woff2;base64,d09GMgABAAAAABgYABAAAAAAPNQAABe4AAIAQgAAAAAAAAAAA
     </div>
   </section>
 
-  <!-- ============================== CREW =============================== -->
-  <section class="panel" id="p-crew" role="tabpanel" aria-labelledby="t-crew" tabindex="-1" hidden>
-    <h2 class="sec">Crew</h2>
-    <p class="sec-sub">Anyone who may write to this log. Entries are attributed from this roster.</p>
-    <div id="crewList"></div>
-    <button class="btn-add" type="button" id="addCrew">＋ Add crew member</button>
-  </section>
-
   <!-- =============================== LOG =============================== -->
   <section class="panel" id="p-log" role="tabpanel" aria-labelledby="t-log" tabindex="-1" hidden>
     <h2 class="sec">New Entry</h2>
-    <p class="sec-sub">Timestamped the moment you log it.</p>
+    <p class="sec-sub" id="composeSub">Timestamped the moment you log it.</p>
 
     <div class="card">
-      <div class="row">
-        <div class="f">
-          <label for="f-entryBy">Logged By</label>
-          <select id="f-entryBy"></select>
-        </div>
-        <div class="f">
-          <label for="f-entryType">Entry Type</label>
-          <select id="f-entryType"></select>
-        </div>
-      </div>
-      <div class="f" id="w-entryByOther" hidden>
-        <label for="f-entryByOther">Logged By (other)</label>
-        <input id="f-entryByOther" type="text" autocomplete="off" placeholder="Name or callsign">
+      <div class="f">
+        <label for="f-entryType">Entry Type</label>
+        <select id="f-entryType"></select>
       </div>
       <div class="f" id="w-entryTypeOther" hidden>
         <label for="f-entryTypeOther">Entry Type (other)</label>
@@ -542,15 +524,9 @@ src:url(data:font/woff2;base64,d09GMgABAAAAABgYABAAAAAAPNQAABe4AAIAQgAAAAAAAAAAA
         <span aria-hidden="true">🔧</span> Filter <span class="chev" aria-hidden="true">▾</span>
       </button>
       <div class="coll-b" id="cb-filter">
-        <div class="row">
-          <div class="f">
-            <label for="f-filterBy">Logged By</label>
-            <select id="f-filterBy"></select>
-          </div>
-          <div class="f">
-            <label for="f-filterType">Entry Type</label>
-            <select id="f-filterType"></select>
-          </div>
+        <div class="f">
+          <label for="f-filterType">Entry Type</label>
+          <select id="f-filterType"></select>
         </div>
         <div class="sw-row">
           <span class="sw-lb" id="lb-fcrit">Critical only</span>
@@ -582,7 +558,7 @@ src:url(data:font/woff2;base64,d09GMgABAAAAABgYABAAAAAAPNQAABe4AAIAQgAAAAAAAAAAA
     <h2 class="sec">Session</h2>
     <button class="btn-quiet danger" type="button" id="clearEntries">
       <span class="ic" aria-hidden="true">☢️</span>
-      <span>Clear all entries<span class="sub">Keeps setup and crew.</span></span>
+      <span>Clear all entries<span class="sub">Keeps your setup.</span></span>
     </button>
     <button class="btn-quiet danger" type="button" id="newSession">
       <span class="ic" aria-hidden="true">☢️</span>
@@ -615,8 +591,6 @@ src:url(data:font/woff2;base64,d09GMgABAAAAABgYABAAAAAAPNQAABe4AAIAQgAAAAAAAAAAA
   <div class="nav-in" role="tablist" aria-label="Sections">
     <button class="tab" id="t-setup" role="tab" aria-selected="true" aria-controls="p-setup" data-tab="setup">
       <span class="ic" aria-hidden="true">📋</span><span class="lb">Setup</span></button>
-    <button class="tab" id="t-crew" role="tab" aria-selected="false" aria-controls="p-crew" data-tab="crew">
-      <span class="ic" aria-hidden="true">👥</span><span class="lb">Crew</span></button>
     <button class="tab" id="t-log" role="tab" aria-selected="false" aria-controls="p-log" data-tab="log">
       <span class="ic" aria-hidden="true">🗒️</span><span class="lb">Log</span><span class="dot" id="logCount" hidden>0</span></button>
     <button class="tab" id="t-more" role="tab" aria-selected="false" aria-controls="p-more" data-tab="more">
@@ -643,19 +617,9 @@ src:url(data:font/woff2;base64,d09GMgABAAAAABgYABAAAAAAPNQAABe4AAIAQgAAAAAAAAAAA
         <input id="e-time" type="time">
       </div>
     </div>
-    <div class="row">
-      <div class="f">
-        <label for="e-by">Logged By</label>
-        <select id="e-by"></select>
-      </div>
-      <div class="f">
-        <label for="e-type">Entry Type</label>
-        <select id="e-type"></select>
-      </div>
-    </div>
-    <div class="f" id="w-eByOther" hidden>
-      <label for="e-byOther">Logged By (other)</label>
-      <input id="e-byOther" type="text" autocomplete="off">
+    <div class="f">
+      <label for="e-type">Entry Type</label>
+      <select id="e-type"></select>
     </div>
     <div class="f" id="w-eTypeOther" hidden>
       <label for="e-typeOther">Entry Type (other)</label>
@@ -1162,6 +1126,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 
   var SHUTTLE_ROLES = ['Shuttle Helm', 'Shuttle Generalist', 'Shuttle Engineer'];
 
+  /* Part of the shared block, kept verbatim; this tool surfaces no pronoun field. */
   var PRONOUN_PRESETS = ['he/him', 'she/her', 'they/them', 'he/they', 'she/they'];
 
   /* Tool-specific list — NOT part of the shared suite data. */
@@ -1169,7 +1134,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
                      'Navigation', 'Medical', 'Boarding', 'Observation', 'Incident'];
 
   var OTHER = '__other__';
-  var SELF = '__self__';
 
   /* ---------- state ---------------------------------------------------- */
   var state = null;
@@ -1183,7 +1147,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         authorisation: '', date: '', time: ''
       },
       briefing: { threat: '', notes: '' },
-      crew: [],
       entries: [],
       ui: { tab: 'setup', headerHidden: false }
     };
@@ -1237,18 +1200,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     s.briefing.notes = str(b.notes, 8000);
 
     var i;
-    if (Object.prototype.toString.call(o.crew) === '[object Array]') {
-      for (i = 0; i < o.crew.length && i < 60; i++) {
-        var c = o.crew[i] || {};
-        s.crew.push({
-          id: line(c.id, 40) || uid(),
-          name: line(c.name, 80),
-          rank: line(c.rank, 60),
-          role: line(c.role, 60),
-          pronouns: line(c.pronouns, 40)
-        });
-      }
-    }
     if (Object.prototype.toString.call(o.entries) === '[object Array]') {
       for (i = 0; i < o.entries.length && i < 2000; i++) {
         var e = o.entries[i] || {};
@@ -1257,8 +1208,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
           date: /^\d{1,6}-\d{2}-\d{2}$/.test(String(e.date || '')) ? String(e.date) : todayInUniverseISO(),
           time: /^\d{2}:\d{2}$/.test(String(e.time || '')) ? String(e.time) : '00:00',
           recordedAt: line(e.recordedAt, 40),
-          by: line(e.by, 80),
-          byRole: line(e.byRole, 60),
           type: line(e.type, 60),
           critical: e.critical === true,
           text: str(e.text, 6000)
@@ -1266,7 +1215,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       }
     }
     var u = o.ui && typeof o.ui === 'object' ? o.ui : {};
-    s.ui.tab = /^(setup|crew|log|more)$/.test(String(u.tab || '')) ? String(u.tab) : 'setup';
+    s.ui.tab = /^(setup|log|more)$/.test(String(u.tab || '')) ? String(u.tab) : 'setup';
     s.ui.headerHidden = u.headerHidden === true;
     return s;
   }
@@ -1388,7 +1337,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   }
 
   /* ---------- tabs ------------------------------------------------------ */
-  var TABS = ['setup', 'crew', 'log', 'more'];
+  var TABS = ['setup', 'log', 'more'];
 
   function selectTab(name) {
     var i;
@@ -1451,142 +1400,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     if (!state.meta.time) { state.meta.time = nowLocalHM(); }
   }
 
-  /* ---------- crew ------------------------------------------------------ */
-  var CREW_TPL =
-    '<div class="card-head">' +
-      '<span class="badge"></span><span class="grow"></span>' +
-      '<button class="del" type="button" aria-label="Remove crew member">&#10005;</button>' +
-    '</div>' +
-    '<div class="f"><label>Name</label>' +
-      '<input type="text" data-k="name" autocomplete="off" placeholder="Name or callsign"></div>' +
-    '<div class="row">' +
-      '<div class="f"><label>Rank</label><select data-k="rank"></select></div>' +
-      '<div class="f"><label>Role</label><select data-k="role"></select></div>' +
-    '</div>' +
-    '<div class="f" data-w="roleOther" hidden><label>Role (other)</label>' +
-      '<input type="text" data-k="roleOther" autocomplete="off"></div>' +
-    '<div class="f"><label>Pronouns</label><select data-k="pronouns"></select></div>' +
-    '<div class="f" data-w="pronounsOther" hidden><label>Pronouns (other)</label>' +
-      '<input type="text" data-k="pronounsOther" autocomplete="off"></div>';
-
-  function renderCrew() {
-    var list = $('crewList');
-    while (list.firstChild) { list.removeChild(list.firstChild); }
-    if (!state.crew.length) {
-      var p = document.createElement('p');
-      p.className = 'empty';
-      p.textContent = 'None recorded.';
-      list.appendChild(p);
-      return;
-    }
-    var i;
-    for (i = 0; i < state.crew.length; i++) { list.appendChild(crewCard(state.crew[i])); }
-  }
-
-  function crewCard(c) {
-    var card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = CREW_TPL;                       /* static template only */
-
-    var badge = card.querySelector('.badge');
-    badge.textContent = c.role || 'Unassigned';
-
-    card.querySelector('.del').onclick = function () {
-      confirmSheet('Remove crew member',
-        'Removes ' + (c.name || 'this crew member') + ' from the roster. Entries already ' +
-        'logged keep their attribution.', 'Remove', this, function () {
-          var i;
-          for (i = 0; i < state.crew.length; i++) {
-            if (state.crew[i].id === c.id) { state.crew.splice(i, 1); break; }
-          }
-          renderCrew(); refreshAuthorSelects(); save();
-          toast('Crew member removed');
-        });
-    };
-
-    var nameIn = card.querySelector('[data-k="name"]');
-    nameIn.value = c.name;
-    nameIn.oninput = function () { c.name = line(this.value, 80); refreshAuthorSelects(); save(); };
-
-    var rankSel = card.querySelector('[data-k="rank"]');
-    opts(rankSel, RANKS, c.rank);
-    rankSel.onchange = function () { c.rank = this.value; refreshAuthorSelects(); save(); };
-
-    var roleSel = card.querySelector('[data-k="role"]');
-    var roleOtherW = card.querySelector('[data-w="roleOther"]');
-    var roleOtherIn = card.querySelector('[data-k="roleOther"]');
-    var roleIsOther = opts(roleSel, ROLE_GROUPS, c.role, { other: true });
-    show(roleOtherW, roleIsOther);
-    roleOtherIn.value = roleIsOther ? c.role : '';
-    roleSel.onchange = function () {
-      if (this.value === OTHER) { show(roleOtherW, true); c.role = line(roleOtherIn.value, 60); }
-      else { show(roleOtherW, false); c.role = this.value; }
-      badge.textContent = c.role || 'Unassigned';
-      refreshAuthorSelects(); save();
-    };
-    roleOtherIn.oninput = function () {
-      c.role = line(this.value, 60);
-      badge.textContent = c.role || 'Unassigned';
-      refreshAuthorSelects(); save();
-    };
-
-    var prSel = card.querySelector('[data-k="pronouns"]');
-    var prOtherW = card.querySelector('[data-w="pronounsOther"]');
-    var prOtherIn = card.querySelector('[data-k="pronounsOther"]');
-    var prIsOther = opts(prSel, PRONOUN_PRESETS, c.pronouns, { other: true });
-    show(prOtherW, prIsOther);
-    prOtherIn.value = prIsOther ? c.pronouns : '';
-    prSel.onchange = function () {
-      if (this.value === OTHER) { show(prOtherW, true); c.pronouns = line(prOtherIn.value, 40); }
-      else { show(prOtherW, false); c.pronouns = this.value; }
-      save();
-    };
-    prOtherIn.oninput = function () { c.pronouns = line(this.value, 40); save(); };
-
-    return card;
-  }
-
   /* ---------- entries --------------------------------------------------- */
-  function authorList() {
-    var list = [], i;
-    if (state.meta.loggedBy) { list.push({ value: SELF, label: keeperName() + ' (you)' }); }
-    for (i = 0; i < state.crew.length; i++) {
-      var c = state.crew[i];
-      if (!c.name) { continue; }
-      list.push({ value: c.id, label: (c.rank ? c.rank + ' ' : '') + c.name });
-    }
-    return list;
-  }
-
-  function resolveAuthor(value, otherText) {
-    if (value === SELF) { return { by: keeperName(), byRole: roleName() }; }
-    if (value === OTHER) { return { by: line(otherText, 80), byRole: '' }; }
-    var i;
-    for (i = 0; i < state.crew.length; i++) {
-      if (state.crew[i].id === value) {
-        var c = state.crew[i];
-        return { by: (c.rank ? c.rank + ' ' : '') + c.name, byRole: c.role };
-      }
-    }
-    return { by: '', byRole: '' };
-  }
-
-  function refreshAuthorSelects() {
-    var list = authorList(), i;
-    opts($('f-entryBy'), list, $('f-entryBy').value, { other: true });
-    show($('w-entryByOther'), $('f-entryBy').value === OTHER);
-
-    var seen = {}, names = [];
-    for (i = 0; i < state.entries.length; i++) {
-      var n = state.entries[i].by || 'Unattributed';
-      if (!seen[n]) { seen[n] = 1; names.push(n); }
-    }
-    opts($('f-filterBy'), names, $('f-filterBy').value, { blank: '— All —' });
-    opts($('f-filterType'), ENTRY_TYPES, $('f-filterType').value, { blank: '— All —' });
-
+  /* This is one person's log: every entry is the keeper's, so the only
+     select left is the entry type. */
+  function refreshEntrySelects() {
     var t = $('f-entryType');
     opts(t, ENTRY_TYPES, t.value === OTHER ? '' : t.value, { other: true });
     show($('w-entryTypeOther'), t.value === OTHER);
+    opts($('f-filterType'), ENTRY_TYPES, $('f-filterType').value, { blank: '— All —' });
   }
 
   var ENTRY_TPL =
@@ -1597,7 +1418,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     '</div>' +
     '<p class="ent-tx"></p>' +
     '<div class="ent-foot">' +
-      '<span class="ent-by"></span><span class="grow"></span>' +
+      '<span class="grow"></span>' +
       '<span class="flag" hidden>Critical</span>' +
       '<button class="btn-quiet" type="button">Edit</button>' +
     '</div>';
@@ -1624,7 +1445,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     var list = $('entryList'), i;
     while (list.firstChild) { list.removeChild(list.firstChild); }
 
-    var fBy = $('f-filterBy').value;
     var fType = $('f-filterType').value;
     var fCrit = swOn($('f-filterCrit'));
 
@@ -1632,7 +1452,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     var shown = [];
     for (i = 0; i < all.length; i++) {
       var e = all[i];
-      if (fBy && (e.by || 'Unattributed') !== fBy) { continue; }
       if (fType && e.type !== fType) { continue; }
       if (fCrit && !e.critical) { continue; }
       shown.push(e);
@@ -1670,9 +1489,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 
     card.querySelector('.ent-tx').textContent = e.text || '—';
 
-    card.querySelector('.ent-by').textContent =
-      e.by ? (e.by + (e.byRole ? ' · ' + e.byRole : '')) : 'Unattributed';
-
     show(card.querySelector('.flag'), e.critical);
 
     card.querySelector('.del').onclick = function () {
@@ -1683,7 +1499,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
           for (i = 0; i < state.entries.length; i++) {
             if (state.entries[i].id === e.id) { state.entries.splice(i, 1); break; }
           }
-          renderEntries(); refreshAuthorSelects(); renderHeader(); save();
+          renderEntries(); renderHeader(); save();
           toast('Entry deleted');
         });
     };
@@ -1746,18 +1562,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     $('e-date').value = e.date;
     $('e-time').value = e.time;
 
-    var list = authorList();
-    var byVal = '';
-    var i;
-    for (i = 0; i < list.length; i++) {
-      var r = resolveAuthor(list[i].value, '');
-      if (r.by === e.by) { byVal = list[i].value; break; }
-    }
-    opts($('e-by'), list, byVal, { other: true });
-    if (!byVal && e.by) { $('e-by').value = OTHER; }
-    show($('w-eByOther'), $('e-by').value === OTHER);
-    $('e-byOther').value = $('e-by').value === OTHER ? e.by : '';
-
     var typeIsOther = opts($('e-type'), ENTRY_TYPES, e.type, { other: true });
     show($('w-eTypeOther'), typeIsOther);
     $('e-typeOther').value = typeIsOther ? e.type : '';
@@ -1773,17 +1577,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 
   function saveEditor() {
     if (!editing) { return; }
-    var a = resolveAuthor($('e-by').value, $('e-byOther').value);
     editing.date = $('e-date').value || editing.date;
     editing.time = $('e-time').value || editing.time;
-    editing.by = a.by;
-    editing.byRole = a.byRole;
     editing.type = $('e-type').value === OTHER ? line($('e-typeOther').value, 60) : $('e-type').value;
     editing.critical = swOn($('e-crit'));
     editing.text = str($('e-text').value, 6000);
     editing = null;
     closeSheet();
-    renderEntries(); refreshAuthorSelects(); renderHeader(); save();
+    renderEntries(); renderHeader(); save();
     toast('Entry updated');
   }
 
@@ -1802,7 +1603,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     if (shipName()) { bits.push(shipName()); }
     if (state.meta.missionName) { bits.push(state.meta.missionName); }
     bits.push(state.entries.length + (state.entries.length === 1 ? ' entry' : ' entries'));
-    bits.push(state.crew.length + ' crew');
     $('reportSub').textContent = bits.join(' · ');
     $('verLine').textContent = 'UCN General Log v' + APP_VERSION + ' · works offline.';
     renderSaveNote();
@@ -1833,7 +1633,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       exportedAt: nowRealStamp(),
       meta: state.meta,
       briefing: state.briefing,
-      crew: state.crew,
       entries: state.entries
     };
     var blob = new window.Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -1859,9 +1658,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       var incoming = adopt(parsed);
       confirmSheet('Import log',
         'Importing replaces the whole log currently on this device — ' +
-        state.entries.length + ' entries and ' + state.crew.length + ' crew — with ' +
-        incoming.entries.length + ' entries and ' + incoming.crew.length +
-        ' crew from the file. Export first if you want to keep what is here.',
+        state.entries.length + ' entries — with ' + incoming.entries.length +
+        ' entries from the file, and the setup with it. Export first if you want ' +
+        'to keep what is here.',
         'Replace', returnTo, function () {
           incoming.ui = state.ui;
           state = incoming;
@@ -1875,12 +1674,19 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     reader.readAsText(file);
   }
 
+  function renderCompose() {
+    var who = keeperName();
+    $('composeSub').textContent = who
+      ? 'Logged as ' + who + ', timestamped the moment you save it.'
+      : 'Timestamped the moment you save it. Set who you are on the Setup tab.';
+  }
+
   /* ---------- render all ------------------------------------------------ */
   function renderAll() {
     renderSetup();
-    renderCrew();
-    refreshAuthorSelects();
+    refreshEntrySelects();
     renderEntries();
+    renderCompose();
     renderHeader();
     renderMore();
     tickClock();
@@ -2344,32 +2150,25 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       pdfParagraph(doc, 'None recorded.', { italic: true, color: MUTED, fontSize: 9.5 });
     }
 
-    /* --- crew --- */
-    pdfSectionStart(doc, 'Crew Roster', toc);
-    var crewRows = [];
-    for (i = 0; i < s.crew.length; i++) {
-      var c = s.crew[i];
-      crewRows.push([c.name || '—', c.rank || '—', c.role || '—', c.pronouns || '—']);
-    }
-    pdfTable(doc, ['Name', 'Rank', 'Role', 'Pronouns'], crewRows, [52, 36, 52, 34]);
-
     /* --- entries --- */
     var entries = chronological(s);
     pdfSectionStart(doc, 'Log Entries', toc);
+    var keeper = (s.meta.rank ? s.meta.rank + ' ' : '') + s.meta.loggedBy;
     pdfParagraph(doc,
       entries.length
-        ? 'All times are the local clock time at which each entry was logged, on the ' +
-          'in-universe date shown.'
+        ? 'Personal log kept by ' + (keeper || 'an unnamed officer') +
+          (s.meta.role ? ', ' + s.meta.role : '') + '. Times are the local clock time ' +
+          'at which each entry was logged, on the in-universe date shown.'
         : 'No entries were logged during this session.',
       { color: MUTED, fontSize: 9 });
 
     var rows = [];
     for (i = 0; i < entries.length; i++) {
       var e = entries[i];
-      rows.push([e.time || '--:--', prettyDate(e.date), e.by || 'Unattributed',
-                 e.type || 'Log', e.critical ? 'Critical' : '']);
+      rows.push([e.time || '--:--', prettyDate(e.date), e.type || 'Log',
+                 e.critical ? 'Critical' : '']);
     }
-    pdfTable(doc, ['Time', 'Date', 'Logged by', 'Type', 'Flag'], rows, [16, 26, 56, 40, 36]);
+    pdfTable(doc, ['Time', 'Date', 'Type', 'Flag'], rows, [24, 40, 60, 50]);
 
     if (entries.length) {
       pdfCursorY += 6;
@@ -2380,9 +2179,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         pdfEnsureSpace(doc, 24);
         pdfSubHeading(doc, (en.time || '--:--') + ' — ' + (en.type || 'Log') +
                            (en.critical ? ' — CRITICAL' : ''));
-        var by = en.by || 'Unattributed';
-        if (en.byRole) { by += ' · ' + en.byRole; }
-        pdfBlockNote(doc, by, en.text || 'No detail recorded.');
+        pdfBlockNote(doc, '', en.text || 'No detail recorded.');
       }
     }
 
@@ -2463,10 +2260,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     /* --- setup --- */
     $('f-loggedBy').oninput = function () {
       state.meta.loggedBy = line(this.value, 80);
-      renderHeader(); refreshAuthorSelects(); save();
+      renderHeader(); renderCompose(); save();
     };
     $('f-rank').onchange = function () {
-      state.meta.rank = this.value; refreshAuthorSelects(); save();
+      state.meta.rank = this.value; renderCompose(); save();
     };
     $('f-role').onchange = function () {
       var other = this.value === OTHER;
@@ -2536,20 +2333,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     collapsible('ct-filter', 'cb-filter');
     collapsible('ct-about', 'cb-about');
 
-    /* --- crew --- */
-    $('addCrew').onclick = function () {
-      state.crew.push({ id: uid(), name: '', rank: '', role: '', pronouns: '' });
-      renderCrew(); refreshAuthorSelects(); save();
-      var inputs = $('crewList').querySelectorAll('[data-k="name"]');
-      if (inputs.length) { inputs[inputs.length - 1].focus(); }
-    };
-
     /* --- log --- */
-    $('f-entryBy').onchange = function () { show($('w-entryByOther'), this.value === OTHER); };
     $('f-entryType').onchange = function () { show($('w-entryTypeOther'), this.value === OTHER); };
     toggleSwitch('f-entryCrit', null);
     toggleSwitch('f-filterCrit', function () { renderEntries(); });
-    $('f-filterBy').onchange = function () { renderEntries(); };
     $('f-filterType').onchange = function () { renderEntries(); };
 
     $('saveEntry').onclick = function () {
@@ -2559,7 +2346,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         toast('Write the entry first');
         return;
       }
-      var a = resolveAuthor($('f-entryBy').value, $('f-entryByOther').value);
       var type = $('f-entryType').value === OTHER
         ? line($('f-entryTypeOther').value, 60)
         : $('f-entryType').value;
@@ -2568,20 +2354,17 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         date: state.meta.date || todayInUniverseISO(),
         time: nowLocalHM(),                      /* the moment it was logged */
         recordedAt: nowRealStamp(),
-        by: a.by,
-        byRole: a.byRole,
         type: type,
         critical: swOn($('f-entryCrit')),
         text: text
       });
       $('f-entryText').value = '';
       setSw($('f-entryCrit'), false);
-      renderEntries(); refreshAuthorSelects(); renderHeader(); save();
+      renderEntries(); renderHeader(); save();
       toast('Logged at ' + nowLocalHM());
     };
 
     /* --- editor sheet --- */
-    $('e-by').onchange = function () { show($('w-eByOther'), this.value === OTHER); };
     $('e-type').onchange = function () { show($('w-eTypeOther'), this.value === OTHER); };
     toggleSwitch('e-crit', null);
     $('editSave').onclick = saveEditor;
@@ -2616,17 +2399,17 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 
     $('clearEntries').onclick = function () {
       confirmSheet('Clear all entries',
-        'All ' + state.entries.length + ' entries will be deleted. Setup and crew are kept. ' +
+        'All ' + state.entries.length + ' entries will be deleted. Your setup is kept. ' +
         'Export JSON first if you want to keep them.', 'Clear', this, function () {
           state.entries = [];
-          renderEntries(); refreshAuthorSelects(); renderHeader(); renderMore(); save();
+          renderEntries(); renderHeader(); renderMore(); save();
           toast('Entries cleared');
         });
     };
 
     $('newSession').onclick = function () {
       confirmSheet('Start new session',
-        'Setup, crew and all ' + state.entries.length + ' entries will be deleted and the date ' +
+        'Your setup and all ' + state.entries.length + ' entries will be deleted and the date ' +
         'and time reset to now. Export JSON first if you want to keep this log.',
         'Start new', this, function () {
           var hidden = state.ui.headerHidden;
