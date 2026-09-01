@@ -51,9 +51,10 @@ Only blocks 1, 3 and 6 are hand-written; the rest are pasted-in assets.
 
 ## Restyling another tool to match
 
-`docs/RESTYLE-PROMPT.md` is a paste-ready prompt for pointing an LLM at a different
-app and having it adopt this look — the compose card, the log block and the flagged
-state, with the CSS quoted from this file.
+`docs/RESTYLE-PROMPT.md` is a paste-ready prompt for giving another app's log screen
+this look — the compose card, the log block, the critical flag and the quick-entry
+buttons, with the CSS quoted from this file. Scoped to the log area only; it says
+nothing about headers, navigation or other screens.
 
 ## Credits
 
