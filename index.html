@@ -32,6 +32,8 @@
 
 *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 :focus-visible{ outline:2px solid var(--orange); outline-offset:2px; }
+/* a class that sets display would otherwise out-specify the UA [hidden] rule */
+[hidden]{ display:none !important; }
 
 html,body{ margin:0; padding:0; }
 body{
@@ -182,7 +184,20 @@ nav{
   font-size:14px; line-height:1; cursor:pointer; padding:0;
   display:flex; align-items:center; justify-content:center;
 }
-.card.crit{ border-color:var(--red); box-shadow:inset 0 0 0 1px rgba(178,58,58,0.35); }
+.card.crit{
+  border:2px solid var(--red); padding:11px 11px 9px;
+  background:linear-gradient(160deg, #2b1526 0%, #35202f 100%);
+  box-shadow:0 0 0 1px rgba(178,58,58,0.35), 0 4px 18px rgba(178,58,58,0.22);
+}
+.crit-bar{
+  display:flex; align-items:center; gap:7px;
+  margin:-11px -11px 10px; padding:7px 11px;
+  background:var(--red); color:var(--white); border-radius:11px 11px 0 0;
+  font-family:var(--font-display); font-size:10px; font-weight:700;
+  letter-spacing:0.1em; text-transform:uppercase;
+}
+.crit-bar .ic{ font-size:12px; line-height:1; }
+.card.crit .badge{ border-color:#ff9d9d; }
 
 /* ---------- fields ---------------------------------------------------- */
 .f{ margin-bottom:10px; }
@@ -299,11 +314,6 @@ select.t-red{ border-color:var(--red); background-color:rgba(178,58,58,0.20); }
 .ent-foot{ display:flex; gap:8px; align-items:center; margin-top:9px; }
 .ent-foot .grow{ flex:1; min-width:0; }
 .ent-foot .btn-quiet{ margin:0; padding:7px 10px; font-size:12px; width:auto; border-radius:9px; }
-.flag{
-  font-family:var(--font-display); font-size:9px; font-weight:700; letter-spacing:0.08em;
-  text-transform:uppercase; color:#ff9d9d; border:1px solid var(--red);
-  background:rgba(178,58,58,0.18); border-radius:7px; padding:2px 6px; white-space:nowrap;
-}
 
 /* ---------- toast ------------------------------------------------------ */
 .toast{
@@ -511,7 +521,7 @@ src:url(data:font/woff2;base64,d09GMgABAAAAABgYABAAAAAAPNQAABe4AAIAQgAAAAAAAAAAA
         <textarea id="f-entryText" rows="4" placeholder="What happened."></textarea>
       </div>
       <div class="sw-row">
-        <span class="sw-lb" id="lb-crit">Flag as critical<small>Marks the entry red here and in the report.</small></span>
+        <span class="sw-lb" id="lb-crit">Flag as critical<small>Bannered red here, and called out in the report.</small></span>
         <button class="sw" type="button" id="f-entryCrit" role="switch" aria-checked="false" aria-labelledby="lb-crit"></button>
       </div>
     </div>
@@ -1411,6 +1421,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   }
 
   var ENTRY_TPL =
+    '<div class="crit-bar" hidden>' +
+      '<span class="ic" aria-hidden="true">\u2622\uFE0F</span>Critical entry</div>' +
     '<div class="card-head">' +
       '<span class="badge"></span><span class="grow"></span>' +
       '<span class="ent-time"></span>' +
@@ -1419,7 +1431,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     '<p class="ent-tx"></p>' +
     '<div class="ent-foot">' +
       '<span class="grow"></span>' +
-      '<span class="flag" hidden>Critical</span>' +
       '<button class="btn-quiet" type="button">Edit</button>' +
     '</div>';
 
@@ -1489,7 +1500,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 
     card.querySelector('.ent-tx').textContent = e.text || '—';
 
-    show(card.querySelector('.flag'), e.critical);
+    show(card.querySelector('.crit-bar'), e.critical);
 
     card.querySelector('.del').onclick = function () {
       confirmSheet('Delete entry',
@@ -1706,8 +1717,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   var MUTED = [140, 152, 191];
   var LINE = [222, 226, 240];
   var WHITE = [255, 255, 255];
-
-  var CHART_MAX = 10;                                 /* pinned y axis */
+  var RED = [178, 58, 58];                            /* critical entries only */
+  var REDTINT = [253, 238, 238];
 
   var pdfCursorY = MT;
   var pdfFontsOk = false;
@@ -1837,7 +1848,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     return s + '…';
   }
 
-  function pdfTable(doc, headers, rows, colWidths) {
+  function pdfTable(doc, headers, rows, colWidths, o) {
+    o = o || {};
     if (!rows || !rows.length) {
       pdfParagraph(doc, 'None recorded.', { italic: true, color: MUTED, fontSize: 9.5 });
       return;
@@ -1867,9 +1879,16 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         pdfNewPage(doc);
         band();
       }
-      doc.setFont(pdfBodyFont(), 'normal');
+      var hot = o.highlight && o.highlight(i);
+      if (hot) {
+        setFill(doc, REDTINT);
+        doc.rect(ML, pdfCursorY, CW, 7, 'F');
+        setFill(doc, RED);
+        doc.rect(ML, pdfCursorY, 1.2, 7, 'F');
+      }
+      doc.setFont(pdfBodyFont(), hot ? 'bold' : 'normal');
       doc.setFontSize(9);
-      setInk(doc, PTEXT);
+      setInk(doc, hot ? RED : PTEXT);
       x = ML;
       for (j = 0; j < headers.length; j++) {
         doc.text(pdfFit(doc, rows[i][j], colWidths[j] - 5), x + 2.5, pdfCursorY + 4.6);
@@ -1883,7 +1902,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     pdfCursorY += 3;
   }
 
-  function pdfBlockNote(doc, title, text) {
+  function pdfBlockNote(doc, title, text, o) {
+    o = o || {};
+    var accent = o.accent || ORANGE;
+    var tint = o.tint || [250, 251, 253];
+    var titleInk = o.titleInk || NAVY;
     var lh = 4.4;
     doc.setFont(pdfBodyFont(), 'normal');
     doc.setFontSize(9.5);
@@ -1899,18 +1922,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       var chunk = lines.slice(idx, idx + room);
       var boxH = head + (chunk.length - 1) * lh + 4;
 
-      setStroke(doc, LINE);
+      setStroke(doc, o.accent ? accent : LINE);
       doc.setLineWidth(0.3);
-      setFill(doc, [250, 251, 253]);
+      setFill(doc, tint);
       doc.rect(ML, pdfCursorY, CW, boxH, 'FD');
-      setStroke(doc, ORANGE);
-      doc.setLineWidth(0.8);
+      setStroke(doc, accent);
+      doc.setLineWidth(o.accent ? 1.6 : 0.8);
       doc.line(ML, pdfCursorY, ML, pdfCursorY + boxH);
 
       if (head === 11) {
         doc.setFont(pdfBodyFont(), 'bold');
         doc.setFontSize(8);
-        setInk(doc, NAVY);
+        setInk(doc, titleInk);
         doc.text(pdfFit(doc, String(title).toUpperCase(), CW - 9), ML + 4.5, pdfCursorY + 5.4);
       }
       doc.setFont(pdfBodyFont(), 'normal');
@@ -1923,59 +1946,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       pdfCursorY += boxH + 4;
       idx += chunk.length;
     }
-  }
-
-  /* Entries per hour across the sortie. Axis pinned to 0..CHART_MAX so two
-     reports can be laid side by side; points spaced by index. */
-  function pdfChart(doc, points) {
-    if (!points.length) {
-      pdfParagraph(doc, 'None recorded.', { italic: true, color: MUTED, fontSize: 9.5 });
-      return;
-    }
-    var h = 44, w = CW - 14, x0 = ML + 14;
-    pdfEnsureSpace(doc, h + 16);
-    var top = pdfCursorY;
-    var bottom = top + h;
-
-    var g;
-    doc.setFont(pdfBodyFont(), 'normal');
-    doc.setFontSize(7);
-    for (g = 0; g <= 4; g++) {
-      var gy = bottom - (h * g / 4);
-      setStroke(doc, LINE);
-      doc.setLineWidth(0.2);
-      doc.line(x0, gy, x0 + w, gy);
-      setInk(doc, MUTED);
-      doc.text(String(CHART_MAX * g / 4), x0 - 3, gy + 1, { align: 'right' });
-    }
-
-    var step = points.length > 1 ? w / (points.length - 1) : 0;
-    var i, px, py, ppx = 0, ppy = 0;
-    setStroke(doc, ORANGE);
-    doc.setLineWidth(0.6);
-    for (i = 0; i < points.length; i++) {
-      var v = points[i].v;
-      if (v > CHART_MAX) { v = CHART_MAX; }
-      px = points.length > 1 ? x0 + step * i : x0 + w / 2;
-      py = bottom - (h * v / CHART_MAX);
-      if (i > 0) { doc.line(ppx, ppy, px, py); }
-      ppx = px; ppy = py;
-    }
-    setFill(doc, ORANGE);
-    for (i = 0; i < points.length; i++) {
-      var v2 = points[i].v;
-      if (v2 > CHART_MAX) { v2 = CHART_MAX; }
-      px = points.length > 1 ? x0 + step * i : x0 + w / 2;
-      doc.circle(px, bottom - (h * v2 / CHART_MAX), 0.7, 'F');
-    }
-
-    doc.setFontSize(7);
-    setInk(doc, MUTED);
-    doc.text(points[0].k, x0, bottom + 4);
-    if (points.length > 1) {
-      doc.text(points[points.length - 1].k, x0 + w, bottom + 4, { align: 'right' });
-    }
-    pdfCursorY = bottom + 10;
   }
 
   function pdfSectionStart(doc, title, tocEntries) {
@@ -2062,6 +2032,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     add('Role', s.meta.role);
     add('Date', prettyDate(s.meta.date) + (s.meta.time ? ' · ' + s.meta.time : ''));
     add('Entries', String(s.entries.length));
+    var crit = 0, ci;
+    for (ci = 0; ci < s.entries.length; ci++) { if (s.entries[ci].critical) { crit += 1; } }
+    add('Critical', crit ? String(crit) : '');
     if (!rows.length) { rows.push(['Status', 'Setup not completed']); }
 
     var tw = 120, tx = (PW - tw) / 2, kw = 40, rh = 8.5, ty = 108;
@@ -2107,19 +2080,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     return out;
   }
 
-  function hourBuckets(entries) {
-    var map = {}, order = [], i;
-    for (i = 0; i < entries.length; i++) {
-      var k = String(entries[i].time || '00:00').slice(0, 2) + ':00';
-      if (!map.hasOwnProperty(k)) { map[k] = 0; order.push(k); }
-      map[k] += 1;
-    }
-    order.sort();
-    var out = [];
-    for (i = 0; i < order.length; i++) { out.push({ k: order[i], v: map[order[i]] }); }
-    return out;
-  }
-
   function buildPdf(doc, s) {
     pdfRegisterFonts(doc);
     pdfCursorY = MT;
@@ -2154,11 +2114,15 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     var entries = chronological(s);
     pdfSectionStart(doc, 'Log Entries', toc);
     var keeper = (s.meta.rank ? s.meta.rank + ' ' : '') + s.meta.loggedBy;
+    var criticals = 0;
+    for (i = 0; i < entries.length; i++) { if (entries[i].critical) { criticals += 1; } }
     pdfParagraph(doc,
       entries.length
         ? 'Personal log kept by ' + (keeper || 'an unnamed officer') +
           (s.meta.role ? ', ' + s.meta.role : '') + '. Times are the local clock time ' +
-          'at which each entry was logged, on the in-universe date shown.'
+          'at which each entry was logged, on the in-universe date shown.' +
+          (criticals ? ' ' + criticals + (criticals === 1 ? ' entry is' : ' entries are') +
+            ' flagged critical, marked in red throughout.' : '')
         : 'No entries were logged during this session.',
       { color: MUTED, fontSize: 9 });
 
@@ -2168,28 +2132,35 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       rows.push([e.time || '--:--', prettyDate(e.date), e.type || 'Log',
                  e.critical ? 'Critical' : '']);
     }
-    pdfTable(doc, ['Time', 'Date', 'Type', 'Flag'], rows, [24, 40, 60, 50]);
+    pdfTable(doc, ['Time', 'Date', 'Type', 'Flag'], rows, [24, 40, 60, 50], {
+      highlight: function (n) { return entries[n].critical === true; }
+    });
 
     if (entries.length) {
-      pdfCursorY += 6;
-      pdfSubHeading(doc, 'Entries in full');
-      pdfCursorY += 2;
+      pdfSectionStart(doc, 'Entries in Full', toc);
+      pdfCursorY += 3;
       for (i = 0; i < entries.length; i++) {
         var en = entries[i];
-        pdfEnsureSpace(doc, 24);
-        pdfSubHeading(doc, (en.time || '--:--') + ' — ' + (en.type || 'Log') +
-                           (en.critical ? ' — CRITICAL' : ''));
-        pdfBlockNote(doc, '', en.text || 'No detail recorded.');
+        pdfEnsureSpace(doc, 26);
+        if (en.critical) {
+          pdfEnsureSpace(doc, 30);
+          setFill(doc, RED);
+          doc.rect(ML, pdfCursorY - 4.2, CW, 6.4, 'F');
+          doc.setFont(pdfHeadingFont(), 'bold');
+          doc.setFontSize(9);
+          setInk(doc, WHITE);
+          doc.text(pdfDisplayText((en.time || '--:--') + ' — ' + (en.type || 'Log')).toUpperCase(),
+                   ML + 2.5, pdfCursorY + 0.4);
+          doc.text('CRITICAL', ML + CW - 2.5, pdfCursorY + 0.4, { align: 'right' });
+          pdfCursorY += 6;
+          pdfBlockNote(doc, '', en.text || 'No detail recorded.',
+                       { accent: RED, tint: REDTINT });
+        } else {
+          pdfSubHeading(doc, (en.time || '--:--') + ' — ' + (en.type || 'Log'));
+          pdfBlockNote(doc, '', en.text || 'No detail recorded.');
+        }
       }
     }
-
-    /* --- activity --- */
-    pdfSectionStart(doc, 'Log Activity', toc);
-    pdfParagraph(doc,
-      'Entries logged per hour. The scale is fixed at 0 to ' + CHART_MAX +
-      ' so reports can be compared side by side.',
-      { color: MUTED, fontSize: 9 });
-    pdfChart(doc, hourBuckets(entries));
 
     pdfDrawToc(doc, toc);
     return doc;
