@@ -23,7 +23,8 @@ of `.`, or drag the folder onto the Netlify dashboard.
 
 | Tab | Holds |
 |---|---|
-| **Setup** | Who is keeping the log, the ship, mission and authorisation, the date and time, and a collapsible briefing (threat level plus free-text notes). |
+| **Setup** | Who is keeping the log, the ship and mission, and the date and time. |
+| **Briefing** | Authorisation and threat level, then the free-text briefing notes. All three open the report. |
 | **Log** | The compose card and the entry stream, newest first, with a filter. Entries are yours by definition, so there is no author to pick — just the type, the text and a critical flag. |
 | **More** | PDF export, JSON export and import, session controls, and the About note. |
 
@@ -51,9 +52,10 @@ Only blocks 1, 3 and 6 are hand-written; the rest are pasted-in assets.
 
 ## Restyling another tool to match
 
-`docs/RESTYLE-PROMPT.md` is a paste-ready prompt for pointing an LLM at a different
-app and having it adopt this look — the compose card, the log block and the flagged
-state, with the CSS quoted from this file.
+`docs/RESTYLE-PROMPT.md` is a paste-ready prompt for giving another app's log screen
+this look — the compose card, the log block, the critical flag and the quick-entry
+buttons, with the CSS quoted from this file. Scoped to the log area only; it says
+nothing about headers, navigation or other screens.
 
 ## Credits
 

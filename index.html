@@ -87,7 +87,8 @@ header{
   font-family:var(--font-display); font-size:11px; font-weight:700;
   letter-spacing:0.06em; text-transform:uppercase; line-height:1.1;
 }
-.hd-btn span.ic{ font-size:13px; line-height:1; }
+.hd-btn span.ic{ font-size:13px; line-height:1; transition:transform .18s ease; }
+.hd-btn[aria-expanded="true"] span.ic{ transform:rotate(180deg); }
 .hd-btn:active{ background:rgba(221,122,43,0.14); }
 
 .hd-meta{
@@ -394,7 +395,7 @@ src:url(data:font/woff2;base64,d09GMgABAAAAABgYABAAAAAAPNQAABe4AAIAQgAAAAAAAAAAA
         <div class="hd-sub" id="hdSub">Setup pending</div>
       </div>
       <button class="hd-btn" id="hdToggle" type="button" aria-expanded="true" aria-controls="hdMeta">
-        <span class="ic" aria-hidden="true">🧭</span><span id="hdToggleLb">Hide</span>
+        <span class="ic" aria-hidden="true">▾</span><span id="hdToggleLb">Hide</span>
       </button>
     </div>
     <div class="banner" id="storeBanner" hidden>
@@ -469,10 +470,6 @@ src:url(data:font/woff2;base64,d09GMgABAAAAABgYABAAAAAAPNQAABe4AAIAQgAAAAAAAAAAA
         <p class="hint" id="groupLogoNote">Stored in this browser only. Replaces the UCN mark on the report cover.</p>
       </div>
     </div>
-    <div class="f">
-      <label for="f-authorisation">Authorisation</label>
-      <select id="f-authorisation"></select>
-    </div>
     <div class="row">
       <div class="f">
         <label for="f-date">Date</label>
@@ -484,21 +481,27 @@ src:url(data:font/woff2;base64,d09GMgABAAAAABgYABAAAAAAPNQAABe4AAIAQgAAAAAAAAAAA
       </div>
     </div>
     <p class="hint">Date runs on the in-universe calendar (UCN year = real year + 156).</p>
+  </section>
 
-    <div class="coll">
-      <button class="coll-t" type="button" id="ct-brief" aria-expanded="false" aria-controls="cb-brief">
-        <span aria-hidden="true">🗒️</span> Briefing <span class="chev" aria-hidden="true">▾</span>
-      </button>
-      <div class="coll-b" id="cb-brief">
-        <div class="f">
-          <label for="f-threat">Threat Level</label>
-          <select id="f-threat"></select>
-        </div>
-        <div class="f">
-          <label for="f-briefing">Briefing Notes</label>
-          <textarea id="f-briefing" rows="6" placeholder="Free text. Orders as given, intelligence, standing instructions."></textarea>
-        </div>
-      </div>
+  <!-- ============================ BRIEFING ============================= -->
+  <section class="panel" id="p-briefing" role="tabpanel" aria-labelledby="t-briefing" tabindex="-1" hidden>
+    <h2 class="sec">Orders</h2>
+    <p class="sec-sub">What you were sent out to do, and how hot it is expected to get.</p>
+
+    <div class="f">
+      <label for="f-authorisation">Authorisation</label>
+      <select id="f-authorisation"></select>
+    </div>
+    <div class="f">
+      <label for="f-threat">Threat Level</label>
+      <select id="f-threat"></select>
+    </div>
+
+    <h2 class="sec">Briefing Notes</h2>
+    <p class="sec-sub">Free text. Both selects and these notes open the report.</p>
+    <div class="f">
+      <label for="f-briefing">Notes</label>
+      <textarea id="f-briefing" rows="10" placeholder="Orders as given, intelligence, standing instructions."></textarea>
     </div>
   </section>
 
@@ -601,6 +604,8 @@ src:url(data:font/woff2;base64,d09GMgABAAAAABgYABAAAAAAPNQAABe4AAIAQgAAAAAAAAAAA
   <div class="nav-in" role="tablist" aria-label="Sections">
     <button class="tab" id="t-setup" role="tab" aria-selected="true" aria-controls="p-setup" data-tab="setup">
       <span class="ic" aria-hidden="true">📋</span><span class="lb">Setup</span></button>
+    <button class="tab" id="t-briefing" role="tab" aria-selected="false" aria-controls="p-briefing" data-tab="briefing">
+      <span class="ic" aria-hidden="true">🧭</span><span class="lb">Briefing</span></button>
     <button class="tab" id="t-log" role="tab" aria-selected="false" aria-controls="p-log" data-tab="log">
       <span class="ic" aria-hidden="true">🗒️</span><span class="lb">Log</span><span class="dot" id="logCount" hidden>0</span></button>
     <button class="tab" id="t-more" role="tab" aria-selected="false" aria-controls="p-more" data-tab="more">
@@ -1225,7 +1230,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       }
     }
     var u = o.ui && typeof o.ui === 'object' ? o.ui : {};
-    s.ui.tab = /^(setup|log|more)$/.test(String(u.tab || '')) ? String(u.tab) : 'setup';
+    s.ui.tab = /^(setup|briefing|log|more)$/.test(String(u.tab || '')) ? String(u.tab) : 'setup';
     s.ui.headerHidden = u.headerHidden === true;
     return s;
   }
@@ -1347,7 +1352,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   }
 
   /* ---------- tabs ------------------------------------------------------ */
-  var TABS = ['setup', 'log', 'more'];
+  var TABS = ['setup', 'briefing', 'log', 'more'];
 
   function selectTab(name) {
     var i;
@@ -1383,8 +1388,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     var roleIsOther = opts($('f-role'), ROLE_GROUPS, state.meta.role, { other: true });
     var shipIsOther = opts($('f-ship'), SHIPS, state.meta.ship, { other: true });
     opts($('f-missionType'), MISSION_TYPES, state.meta.missionType);
-    opts($('f-authorisation'), AUTHORISATIONS, state.meta.authorisation);
-    opts($('f-threat'), THREAT_LEVELS, state.briefing.threat);
 
     $('f-roleOther').value = roleIsOther ? state.meta.role : '';
     $('f-shipOther').value = shipIsOther ? state.meta.ship : '';
@@ -1400,8 +1403,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       : 'Stored in this browser only. Replaces the UCN mark on the report cover.';
     $('f-date').value = state.meta.date;
     $('f-time').value = state.meta.time;
-    $('f-briefing').value = state.briefing.notes;
+  }
+
+  /* ---------- briefing -------------------------------------------------- */
+  function renderBriefing() {
+    opts($('f-authorisation'), AUTHORISATIONS, state.meta.authorisation);
+    opts($('f-threat'), THREAT_LEVELS, state.briefing.threat);
     $('f-threat').className = threatClass(state.briefing.threat);
+    $('f-briefing').value = state.briefing.notes;
   }
 
   /* Fills only what is still empty — never overwrites what the user typed. */
@@ -1695,6 +1704,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   /* ---------- render all ------------------------------------------------ */
   function renderAll() {
     renderSetup();
+    renderBriefing();
     refreshEntrySelects();
     renderEntries();
     renderCompose();
@@ -2300,7 +2310,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     };
     $('f-briefing').oninput = function () { state.briefing.notes = str(this.value, 8000); save(); };
 
-    collapsible('ct-brief', 'cb-brief');
     collapsible('ct-filter', 'cb-filter');
     collapsible('ct-about', 'cb-about');
 
