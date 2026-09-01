@@ -49,6 +49,12 @@ as an offset so it stays correct as real years pass.
 
 Only blocks 1, 3 and 6 are hand-written; the rest are pasted-in assets.
 
+## Restyling another tool to match
+
+`docs/RESTYLE-PROMPT.md` is a paste-ready prompt for pointing an LLM at a different
+app and having it adopt this look — the compose card, the log block and the flagged
+state, with the CSS quoted from this file.
+
 ## Credits
 
 * [jsPDF](https://github.com/parallax/jsPDF) 4.2.1 — MIT.
