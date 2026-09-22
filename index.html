@@ -7,6 +7,11 @@
 <meta name="description" content="UCN General Log — offline log-keeping tool for Bridge Command sorties. Fan-made.">
 <meta name="robots" content="noindex">
 <title>UCN General Log</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="General Log">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231B2A5E'/%3E%3Crect x='8' y='9' width='16' height='2.4' rx='1.2' fill='%23DD7A2B'/%3E%3Crect x='8' y='15' width='16' height='2.4' rx='1.2' fill='%23e8ecf7'/%3E%3Crect x='8' y='21' width='10' height='2.4' rx='1.2' fill='%23e8ecf7'/%3E%3C/svg%3E">
 <style>
 /* ============================================================
@@ -2457,6 +2462,20 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     });
   }
 
+  /* Installing the offline shell is a bonus of being hosted, never a
+     requirement. Opening index.html straight off disk registers nothing, so
+     the single-file build stays exactly as self-contained as it was. */
+  function registerServiceWorker() {
+    var loc = window.location;
+    if (!window.navigator || !window.navigator.serviceWorker) { return; }
+    if (loc.protocol !== 'https:' && loc.hostname !== 'localhost' &&
+        loc.hostname !== '127.0.0.1') { return; }
+    try {
+      var p = window.navigator.serviceWorker.register('sw.js');
+      if (p && p.then) { p.then(null, function () { /* nothing to do */ }); }
+    } catch (err) { /* nothing to do */ }
+  }
+
   /* ---------- boot ------------------------------------------------------ */
   function boot() {
     if (A.logo) { $('hdLogo').src = A.logo; }
@@ -2468,6 +2487,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     selectTab(state.ui.tab || 'setup');
     save();
     if (state.draft.text) { toast('Unsaved entry restored'); }
+    registerServiceWorker();
     window.setInterval(tickClock, 20000);
   }
 
