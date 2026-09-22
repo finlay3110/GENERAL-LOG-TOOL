@@ -1,0 +1,8 @@
+# Netlify: the shell and the worker must always revalidate, or a deploy can
+# never reach a device that already has them.
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
+/manifest.webmanifest
+  Cache-Control: public, max-age=0, must-revalidate

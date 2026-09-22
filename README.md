@@ -17,7 +17,20 @@ cold first launch with the aircraft-mode switch on.
 
 The site root is the repository root and `index.html` is the entry point, so there is
 nothing to configure: connect the repo with no build command and a publish directory
-of `.`, or drag the folder onto the Netlify dashboard.
+of `.`, or drag the folder onto the Netlify dashboard. `_headers` keeps the shell and
+the service worker on `must-revalidate` so a deploy always reaches a device that
+already has them.
+
+## Installing it
+
+Hosted over https, the tool registers `sw.js` and can be added to a phone's home
+screen, where it opens full-screen and runs with no signal. The page is fetched
+network-first, so a new deploy always wins and nobody is ever stuck on a stale build;
+the cache is only the fallback for a slow or absent network.
+
+Opened as a local file this does nothing at all — `registerServiceWorker()` bails
+unless the origin is https or localhost, so the single-file build stays exactly as
+self-contained as it was.
 
 ## Tabs
 
@@ -49,6 +62,9 @@ as an offset so it stays correct as real years pass.
 6. `<script id="ucn-app">` — the application, plain ES5 in one IIFE.
 
 Only blocks 1, 3 and 6 are hand-written; the rest are pasted-in assets.
+
+`sw.js`, `manifest.webmanifest`, `_headers` and the three icons sit alongside it
+and are only used when the tool is hosted.
 
 ## Restyling another tool to match
 
