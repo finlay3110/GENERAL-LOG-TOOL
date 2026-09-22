@@ -1100,11 +1100,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   }
 
   /* Every value that reaches the DOM, storage or the PDF goes through here:
-     control characters out, hard length cap on. Text is only ever drawn or
-     assigned as data — never evaluated. */
+     control characters out, hard length cap on. Newlines and tabs are kept --
+     stripping them flattens multi-line entries. Text is only ever drawn or
+     assigned as data, never evaluated. */
   function str(v, max) {
     if (v === null || v === undefined) { return ''; }
-    var s = String(v).replace(/[\u0000-\u001f\u007f]/g, '');
+    var s = String(v)
+      .replace(/\r\n?/g, '\n')                       /* normalise line endings */
+      .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '');   /* keep \t and \n */
     if (max && s.length > max) { s = s.slice(0, max); }
     return s;
   }
@@ -1162,6 +1165,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         authorisation: '', date: '', time: ''
       },
       briefing: { threat: '', notes: '' },
+      draft: { type: '', typeOther: '', text: '', critical: false },
       entries: [],
       ui: { tab: 'setup', headerHidden: false }
     };
@@ -1177,18 +1181,32 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   var saveTimer = null;
   var saveFailed = false;
 
+  function writeNow() {
+    try {
+      window.localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      saveFailed = false;
+    } catch (err) {
+      saveFailed = true;
+    }
+  }
+
   function save() {
     if (saveTimer) { window.clearTimeout(saveTimer); }
     saveTimer = window.setTimeout(function () {
       saveTimer = null;
-      try {
-        window.localStorage.setItem(STORE_KEY, JSON.stringify(state));
-        saveFailed = false;
-      } catch (err) {
-        saveFailed = true;
-      }
+      writeNow();
       renderSaveNote();
     }, 250);
+  }
+
+  /* A phone can discard a backgrounded tab before the debounce fires, taking
+     the last few seconds of typing with it. On the way out, write straight
+     through instead of waiting. */
+  function flushSave() {
+    if (!state) { return; }
+    if (saveTimer) { window.clearTimeout(saveTimer); saveTimer = null; }
+    writeNow();
+    if (!document.hidden) { renderSaveNote(); }
   }
 
   /* Accepts anything — stored blob or imported file — and returns clean state. */
@@ -1229,6 +1247,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         });
       }
     }
+    var d = o.draft && typeof o.draft === 'object' ? o.draft : {};
+    s.draft.type = line(d.type, 60);
+    s.draft.typeOther = line(d.typeOther, 60);
+    s.draft.text = str(d.text, 6000);
+    s.draft.critical = d.critical === true;
+
     var u = o.ui && typeof o.ui === 'object' ? o.ui : {};
     s.ui.tab = /^(setup|briefing|log|more)$/.test(String(u.tab || '')) ? String(u.tab) : 'setup';
     s.ui.headerHidden = u.headerHidden === true;
@@ -1423,9 +1447,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   /* This is one person's log: every entry is the keeper's, so the only
      select left is the entry type. */
   function refreshEntrySelects() {
-    var t = $('f-entryType');
-    opts(t, ENTRY_TYPES, t.value === OTHER ? '' : t.value, { other: true });
-    show($('w-entryTypeOther'), t.value === OTHER);
     opts($('f-filterType'), ENTRY_TYPES, $('f-filterType').value, { blank: '— All —' });
   }
 
@@ -1653,7 +1674,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       exportedAt: nowRealStamp(),
       meta: state.meta,
       briefing: state.briefing,
-      entries: state.entries
+      entries: state.entries        /* the in-progress draft is deliberately omitted */
     };
     var blob = new window.Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     download(blob, fileStem() + '.json');
@@ -1699,6 +1720,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     $('composeSub').textContent = who
       ? 'Logged as ' + who + ', timestamped the moment you save it.'
       : 'Timestamped the moment you save it. Set who you are on the Setup tab.';
+
+    var d = state.draft;
+    opts($('f-entryType'), ENTRY_TYPES, d.type, { other: true });
+    var isOther = $('f-entryType').value === OTHER;
+    show($('w-entryTypeOther'), isOther);
+    $('f-entryTypeOther').value = isOther ? d.typeOther : '';
+    $('f-entryText').value = d.text;
+    setSw($('f-entryCrit'), d.critical);
   }
 
   /* ---------- render all ------------------------------------------------ */
@@ -2153,7 +2182,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
         var en = entries[i];
         pdfEnsureSpace(doc, 26);
         if (en.critical) {
-          pdfEnsureSpace(doc, 30);
+          pdfEnsureSpace(doc, 32);
+          pdfCursorY += 2.5;        /* a filled bar needs air a text heading does not */
           setFill(doc, RED);
           doc.rect(ML, pdfCursorY - 4.2, CW, 6.4, 'F');
           doc.setFont(pdfHeadingFont(), 'bold');
@@ -2314,32 +2344,45 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     collapsible('ct-about', 'cb-about');
 
     /* --- log --- */
-    $('f-entryType').onchange = function () { show($('w-entryTypeOther'), this.value === OTHER); };
-    toggleSwitch('f-entryCrit', null);
+    $('f-entryType').onchange = function () {
+      var other = this.value === OTHER;
+      show($('w-entryTypeOther'), other);
+      if (!other) { state.draft.typeOther = ''; $('f-entryTypeOther').value = ''; }
+      state.draft.type = this.value;
+      save();
+    };
+    $('f-entryTypeOther').oninput = function () {
+      state.draft.typeOther = line(this.value, 60); save();
+    };
+    $('f-entryText').oninput = function () {
+      state.draft.text = str(this.value, 6000); save();
+    };
+    toggleSwitch('f-entryCrit', function (on) { state.draft.critical = on; save(); });
     toggleSwitch('f-filterCrit', function () { renderEntries(); });
     $('f-filterType').onchange = function () { renderEntries(); };
 
     $('saveEntry').onclick = function () {
-      var text = str($('f-entryText').value, 6000);
+      var text = str(state.draft.text, 6000);
       if (!text.replace(/\s+/g, '')) {
         $('f-entryText').focus();
         toast('Write the entry first');
         return;
       }
-      var type = $('f-entryType').value === OTHER
-        ? line($('f-entryTypeOther').value, 60)
-        : $('f-entryType').value;
+      var type = state.draft.type === OTHER
+        ? line(state.draft.typeOther, 60)
+        : state.draft.type;
       state.entries.push({
         id: uid(),
         date: state.meta.date || todayInUniverseISO(),
         time: nowLocalHM(),                      /* the moment it was logged */
         recordedAt: nowRealStamp(),
         type: type,
-        critical: swOn($('f-entryCrit')),
+        critical: state.draft.critical,
         text: text
       });
-      $('f-entryText').value = '';
-      setSw($('f-entryCrit'), false);
+      state.draft.text = '';
+      state.draft.critical = false;
+      renderCompose();
       renderEntries(); renderHeader(); save();
       toast('Logged at ' + nowLocalHM());
     };
@@ -2405,6 +2448,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 
     window.addEventListener('resize', measureHeader);
     window.addEventListener('orientationchange', measureHeader);
+
+    /* Both, deliberately: iOS fires pagehide when a tab is swapped out, and
+       visibilitychange is the one that survives the app being backgrounded. */
+    window.addEventListener('pagehide', flushSave);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') { flushSave(); }
+    });
   }
 
   /* ---------- boot ------------------------------------------------------ */
@@ -2417,6 +2467,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     applyHeaderHidden();
     selectTab(state.ui.tab || 'setup');
     save();
+    if (state.draft.text) { toast('Unsaved entry restored'); }
     window.setInterval(tickClock, 20000);
   }
 
