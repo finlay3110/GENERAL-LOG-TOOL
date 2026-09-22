@@ -454,7 +454,12 @@ src:url(data:font/woff2;base64,d09GMgABAAAAABgYABAAAAAAPNQAABe4AAIAQgAAAAAAAAAAA
     </div>
     <div class="f">
       <label for="f-missionName">Mission Name</label>
-      <input id="f-missionName" type="text" autocomplete="off" placeholder="e.g. Operation Silent Harbour">
+      <select id="f-missionName"></select>
+    </div>
+    <div class="f" id="w-missionNameOther" hidden>
+      <label for="f-missionNameOther">Mission Name (other)</label>
+      <input id="f-missionNameOther" type="text" autocomplete="off"
+             placeholder="e.g. Operation Silent Harbour">
     </div>
     <div class="f">
       <label for="f-missionType">Mission Type</label>
@@ -1152,6 +1157,68 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
   /* Part of the shared block, kept verbatim; this tool surfaces no pronoun field. */
   var PRONOUN_PRESETS = ['he/him', 'she/her', 'they/them', 'he/they', 'she/they'];
 
+  var OPERATIONS = [
+    /* Diplomacy */
+    { name: 'OPERATION BARATARIA', type: 'Diplomacy' },
+    { name: 'OPERATION CLARITY', type: 'Diplomacy' },
+    { name: 'OPERATION KISMET', type: 'Diplomacy' },
+    { name: 'OPERATION PHILBY', type: 'Diplomacy' },
+    { name: 'OPERATION PITCHFORK', type: 'Diplomacy' },
+    { name: 'OPERATION REDENTOR', type: 'Diplomacy' },
+    { name: 'TERRA NOVAN DIPLOMATIC INCIDENT', type: 'Diplomacy' },
+    /* Exploration */
+    { name: 'OPERATION ADAMAN', type: 'Exploration' },
+    { name: 'OPERATION AMUNDSEN', type: 'Exploration' },
+    { name: 'OPERATION MARCONI', type: 'Exploration' },
+    { name: 'OPERATION OBELISK', type: 'Exploration' },
+    { name: 'OPERATION SARGASSO', type: 'Exploration' },
+    { name: 'OPERATION SISTEMA', type: 'Exploration' },
+    { name: 'OPERATION VANGUARD', type: 'Exploration' },
+    /* Intrigue */
+    { name: 'OPERATION ANTIMONY', type: 'Intrigue' },
+    { name: 'OPERATION ARGUS', type: 'Intrigue' },
+    { name: 'OPERATION CAMINO', type: 'Intrigue' },
+    { name: 'OPERATION EURYDICE', type: 'Intrigue' },
+    { name: 'OPERATION MOCKINGBIRD', type: 'Intrigue' },
+    { name: 'OPERATION RECOIL', type: 'Intrigue' },
+    { name: 'OPERATION TELEGRAM', type: 'Intrigue' },
+    /* Military */
+    { name: 'ITHAKA MINING FACILITY', type: 'Military' },
+    { name: 'OPERATION ALCHEMIST', type: 'Military' },
+    { name: 'OPERATION CLAYMORE', type: 'Military' },
+    { name: 'OPERATION COPIAPO', type: 'Military' },
+    { name: 'OPERATION HANUMAN', type: 'Military' },
+    { name: 'OPERATION MENDICANT', type: 'Military' },
+    { name: 'OPERATION QUICKSTEP', type: 'Military' },
+    { name: 'OPERATION SILK ROAD', type: 'Military' },
+    { name: 'OPERATION TECUMSEH', type: 'Military' },
+    { name: 'OPERATION TEDDER', type: 'Military' },
+    { name: 'OPERATION VIA MARIS', type: 'Military' }
+  ];
+
+  /* Grouped by type for the picker, in MISSION_TYPES order. */
+  function operationGroups() {
+    var groups = [], seen = {}, i, j;
+    for (i = 0; i < MISSION_TYPES.length; i++) {
+      var type = MISSION_TYPES[i];
+      var items = [];
+      for (j = 0; j < OPERATIONS.length; j++) {
+        if (OPERATIONS[j].type === type) { items.push(OPERATIONS[j].name); }
+      }
+      if (items.length) { groups.push({ group: type, items: items }); seen[type] = 1; }
+    }
+    return groups;
+  }
+
+  /* '' when the name is free text rather than a known operation. */
+  function operationType(name) {
+    var i;
+    for (i = 0; i < OPERATIONS.length; i++) {
+      if (OPERATIONS[i].name === name) { return OPERATIONS[i].type; }
+    }
+    return '';
+  }
+
   /* Tool-specific list — NOT part of the shared suite data. */
   var ENTRY_TYPES = ['Order', 'Contact', 'Engagement', 'Damage', 'Repair', 'Comms',
                      'Navigation', 'Medical', 'Boarding', 'Observation', 'Incident'];
@@ -1423,7 +1490,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     show($('w-roleOther'), roleIsOther);
     show($('w-shipOther'), shipIsOther);
 
-    $('f-missionName').value = state.meta.missionName;
+    var missionIsOther = opts($('f-missionName'), operationGroups(),
+                              state.meta.missionName, { other: true });
+    show($('w-missionNameOther'), missionIsOther);
+    $('f-missionNameOther').value = missionIsOther ? state.meta.missionName : '';
     show($('w-campaign'), state.meta.missionType === 'Campaign');
     $('f-campaignMission').value = state.meta.campaignMission;
     $('f-groupName').value = state.meta.groupName;
@@ -2299,7 +2369,24 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     $('f-shipOther').oninput = function () {
       state.meta.ship = line(this.value, 80); renderHeader(); save();
     };
-    $('f-missionName').oninput = function () {
+    $('f-missionName').onchange = function () {
+      var other = this.value === OTHER;
+      show($('w-missionNameOther'), other);
+      if (!other) { $('f-missionNameOther').value = ''; }
+      state.meta.missionName = other ? line($('f-missionNameOther').value, 120) : this.value;
+
+      /* A known operation carries its own type, so fill it in. The Type select
+         sits right below and stays editable — a Campaign run of a Military
+         operation is still yours to set. */
+      var implied = operationType(state.meta.missionName);
+      if (implied) {
+        state.meta.missionType = implied;
+        setSelect($('f-missionType'), implied, false);
+        show($('w-campaign'), implied === 'Campaign');
+      }
+      renderHeader(); save();
+    };
+    $('f-missionNameOther').oninput = function () {
       state.meta.missionName = line(this.value, 120); renderHeader(); save();
     };
     $('f-missionType').onchange = function () {
