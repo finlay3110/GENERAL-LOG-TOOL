@@ -36,7 +36,7 @@ self-contained as it was.
 
 | Tab | Holds |
 |---|---|
-| **Setup** | Who is keeping the log, the ship and mission, and the date and time. Mission Name is a picker of the 32 known operations, and choosing one fills in its type; anything not on the list goes in through Other. |
+| **Setup** | Who is keeping the log, the ship and mission, and the date and time. Mission Name is a picker of the 32 known operations, and choosing one fills in its type. Rank and Mission Name each carry a search box that narrows the picker — operations match on name or type. Rank, Role, Ship and Mission Name all take free text through Other. |
 | **Briefing** | Authorisation and threat level, then the free-text briefing notes. All three open the report. |
 | **Log** | The compose card and the entry stream, newest first, with a filter. Entries are yours by definition, so there is no author to pick — just the type, the text and a critical flag. |
 | **More** | PDF export, JSON export and import, session controls, and the About note. |
