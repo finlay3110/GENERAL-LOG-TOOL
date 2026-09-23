@@ -230,8 +230,19 @@ select{ -webkit-appearance:none; appearance:none;
 }
 .row{ display:flex; gap:8px; }
 .row > .f{ flex:1; min-width:0; }
+/* one column carrying a search box is taller than its neighbour, so align the
+   controls by their bottoms and the two selects still sit side by side */
+.row.foot{ align-items:flex-end; }
 input[type=file]{ font-size:12px; padding:8px; }
 .hint{ font-size:11px; color:var(--muted); margin-top:4px; }
+
+/* a search box sits above the select it narrows, quieter than its peer */
+.q{
+  font-size:13px; padding:8px 10px; margin-bottom:6px;
+  background:rgba(255,255,255,0.03);
+}
+.q::placeholder{ color:var(--muted); }
+.q-none{ font-style:italic; color:var(--muted); font-size:12px; margin:5px 0 0; }
 
 /* threat tint */
 select.t-green{ border-color:#3f8f5a; background-color:rgba(63,143,90,0.16); }
@@ -428,15 +439,22 @@ src:url(data:font/woff2;base64,d09GMgABAAAAABgYABAAAAAAPNQAABe4AAIAQgAAAAAAAAAAA
       <label for="f-loggedBy">Logged By</label>
       <input id="f-loggedBy" type="text" autocomplete="off" placeholder="Name or callsign">
     </div>
-    <div class="row">
+    <div class="row foot">
       <div class="f">
         <label for="f-rank">Rank</label>
+        <input id="q-rank" class="q" type="search" autocomplete="off"
+               aria-label="Search ranks" aria-controls="f-rank" placeholder="Search…">
         <select id="f-rank"></select>
+        <p class="q-none" id="q-rank-none" hidden>No rank matches that.</p>
       </div>
       <div class="f">
         <label for="f-role">Role</label>
         <select id="f-role"></select>
       </div>
+    </div>
+    <div class="f" id="w-rankOther" hidden>
+      <label for="f-rankOther">Rank (other)</label>
+      <input id="f-rankOther" type="text" autocomplete="off" placeholder="Type the rank">
     </div>
     <div class="f" id="w-roleOther" hidden>
       <label for="f-roleOther">Role (other)</label>
@@ -454,7 +472,11 @@ src:url(data:font/woff2;base64,d09GMgABAAAAABgYABAAAAAAPNQAABe4AAIAQgAAAAAAAAAAA
     </div>
     <div class="f">
       <label for="f-missionName">Mission Name</label>
+      <input id="q-missionName" class="q" type="search" autocomplete="off"
+             aria-label="Search operations by name or type" aria-controls="f-missionName"
+             placeholder="Search name or type…">
       <select id="f-missionName"></select>
+      <p class="q-none" id="q-missionName-none" hidden>No operation matches that.</p>
     </div>
     <div class="f" id="w-missionNameOther" hidden>
       <label for="f-missionNameOther">Mission Name (other)</label>
@@ -1210,6 +1232,40 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
     return groups;
   }
 
+  function searchTerm(v) {
+    return line(v, 80).toLowerCase().replace(/\s+/g, ' ').replace(/^ | $/g, '');
+  }
+
+  /* Narrowing must never drop the current selection: an option that no longer
+     matches is kept in the list so the stored value survives typing. */
+  function filterRanks(term, current) {
+    var list = [], matched = 0, i;
+    for (i = 0; i < RANKS.length; i++) {
+      var hit = !term || RANKS[i].toLowerCase().indexOf(term) > -1;
+      if (hit) { matched += 1; }
+      if (hit || RANKS[i] === current) { list.push(RANKS[i]); }
+    }
+    return { list: list, matched: matched };
+  }
+
+  /* Matches an operation by name or by its type, so "mil" offers the eleven
+     Military operations. Empty groups drop out. */
+  function filterOperations(term, current) {
+    var groups = operationGroups(), out = [], matched = 0, i, j;
+    for (i = 0; i < groups.length; i++) {
+      var typeHit = !!term && groups[i].group.toLowerCase().indexOf(term) > -1;
+      var items = [];
+      for (j = 0; j < groups[i].items.length; j++) {
+        var name = groups[i].items[j];
+        var hit = !term || typeHit || name.toLowerCase().indexOf(term) > -1;
+        if (hit) { matched += 1; }
+        if (hit || name === current) { items.push(name); }
+      }
+      if (items.length) { out.push({ group: groups[i].group, items: items }); }
+    }
+    return { list: out, matched: matched };
+  }
+
   /* '' when the name is free text rather than a known operation. */
   function operationType(name) {
     var i;
@@ -1480,7 +1536,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
 
   function renderSetup() {
     $('f-loggedBy').value = state.meta.loggedBy;
-    opts($('f-rank'), RANKS, state.meta.rank);
+    var rankIsOther = opts($('f-rank'), RANKS, state.meta.rank, { other: true });
+    show($('w-rankOther'), rankIsOther);
+    $('f-rankOther').value = rankIsOther ? state.meta.rank : '';
     var roleIsOther = opts($('f-role'), ROLE_GROUPS, state.meta.role, { other: true });
     var shipIsOther = opts($('f-ship'), SHIPS, state.meta.ship, { other: true });
     opts($('f-missionType'), MISSION_TYPES, state.meta.missionType);
@@ -1502,6 +1560,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       : 'Stored in this browser only. Replaces the UCN mark on the report cover.';
     $('f-date').value = state.meta.date;
     $('f-time').value = state.meta.time;
+
+    $('q-rank').value = '';
+    $('q-missionName').value = '';
+    show($('q-rank-none'), false);
+    show($('q-missionName-none'), false);
   }
 
   /* ---------- briefing -------------------------------------------------- */
@@ -2349,7 +2412,27 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var n,r,i,a,
       renderHeader(); renderCompose(); save();
     };
     $('f-rank').onchange = function () {
-      state.meta.rank = this.value; renderCompose(); save();
+      var other = this.value === OTHER;
+      show($('w-rankOther'), other);
+      if (!other) { $('f-rankOther').value = ''; }
+      state.meta.rank = other ? line($('f-rankOther').value, 60) : this.value;
+      renderCompose(); save();
+    };
+    $('f-rankOther').oninput = function () {
+      state.meta.rank = line(this.value, 60); renderCompose(); save();
+    };
+
+    /* The search boxes only narrow what the selects offer. They touch no state
+       and are never saved, so typing in one can never change the log. */
+    $('q-rank').oninput = function () {
+      var found = filterRanks(searchTerm(this.value), state.meta.rank);
+      opts($('f-rank'), found.list, state.meta.rank, { other: true });
+      show($('q-rank-none'), found.matched === 0);
+    };
+    $('q-missionName').oninput = function () {
+      var found = filterOperations(searchTerm(this.value), state.meta.missionName);
+      opts($('f-missionName'), found.list, state.meta.missionName, { other: true });
+      show($('q-missionName-none'), found.matched === 0);
     };
     $('f-role').onchange = function () {
       var other = this.value === OTHER;
